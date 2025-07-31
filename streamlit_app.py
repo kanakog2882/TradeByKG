@@ -29,7 +29,7 @@ def initialize_plotly():
             with st.spinner("Installing plotly..."):
                 try:
                     subprocess.check_call([
-                        sys.executable, "-m", "pip", "install", 
+                        sys.executable, "-m", "pip", "install",
                         "plotly>=5.15.0", "--quiet"
                     ])
                     st.success("✅ Plotly installed successfully!")
@@ -37,7 +37,6 @@ def initialize_plotly():
                 except subprocess.CalledProcessError as e:
                     st.error(f"❌ Could not install Plotly: {e}")
                     return False, None, None, None
-        
         try:
             import plotly.graph_objects as go
             from plotly.subplots import make_subplots
@@ -47,7 +46,6 @@ def initialize_plotly():
         except ImportError as e:
             st.error(f"❌ Plotly import failed: {e}")
             return False, None, None, None
-            
     except Exception as e:
         st.error(f"❌ Plotly initialization error: {e}")
         return False, None, None, None
@@ -125,7 +123,6 @@ st.markdown("""
 
 # ====== UTILITY FUNCTIONS ======
 def safe_float(value, default=0.0):
-    """Safely convert value to float with comprehensive error handling"""
     if value is None or value == '' or value == 'None':
         return default
     try:
@@ -135,7 +132,6 @@ def safe_float(value, default=0.0):
         return default
 
 def safe_int(value, default=0):
-    """Safely convert value to int with comprehensive error handling"""
     if value is None or value == '' or value == 'None':
         return default
     try:
@@ -144,7 +140,6 @@ def safe_int(value, default=0):
         return default
 
 def safe_median(lst):
-    """Calculate median safely with comprehensive error handling"""
     if not lst:
         return 0.0
     try:
@@ -159,55 +154,27 @@ def safe_median(lst):
 
 # ====== ENHANCED MARKET STATUS DETECTION ======
 def get_market_status():
-    """
-    Enhanced market status detection using timezone, trading hours, and holidays
-    Returns: (is_open: bool, status_text: str, details: str)
-    """
     try:
-        # Get current time in IST
         india_tz = pytz.timezone('Asia/Kolkata')
         now = datetime.now(india_tz)
-        weekday = now.weekday()  # 0=Monday, 6=Sunday
+        weekday = now.weekday()
         current_time = now.time()
         current_date = now.date()
-        
-        # NSE trading hours
-        market_open = dt_time(9, 15)    # 9:15 AM
-        market_close = dt_time(15, 30)  # 3:30 PM
-        
-        # Updated NSE holidays 2025 (from official sources)
+        market_open = dt_time(9, 15)
+        market_close = dt_time(15, 30)
         NSE_HOLIDAYS_2025 = [
-            date(2025, 2, 26),   # Mahashivratri
-            date(2025, 3, 14),   # Holi
-            date(2025, 3, 31),   # Eid-Ul-Fitr (Ramadan Eid)
-            date(2025, 4, 10),   # Shri Mahavir Jayanti
-            date(2025, 4, 14),   # Dr. Baba Saheb Ambedkar Jayanti
-            date(2025, 4, 18),   # Good Friday
-            date(2025, 5, 1),    # Maharashtra Day
-            date(2025, 8, 15),   # Independence Day
-            date(2025, 8, 27),   # Ganesh Chaturthi
-            date(2025, 10, 2),   # Mahatma Gandhi Jayanti/Dussehra
-            date(2025, 10, 21),  # Diwali Laxmi Pujan
-            date(2025, 10, 22),  # Diwali-Balipratipada
-            date(2025, 11, 5),   # Prakash Gurpurb Sri Guru Nanak Dev
-            date(2025, 12, 25),  # Christmas
+            date(2025, 2, 26), date(2025, 3, 14), date(2025, 3, 31), date(2025, 4, 10),
+            date(2025, 4, 14), date(2025, 4, 18), date(2025, 5, 1), date(2025, 8, 15),
+            date(2025, 8, 27), date(2025, 10, 2), date(2025, 10, 21), date(2025, 10, 22),
+            date(2025, 11, 5), date(2025, 12, 25)
         ]
-        
-        # Check if today is a holiday
         is_holiday = current_date in NSE_HOLIDAYS_2025
-        
-        # Check if it's a weekend
-        is_weekend = weekday >= 5  # Saturday=5, Sunday=6
-        
-        # Check if within trading hours
+        is_weekend = weekday >= 5
         is_trading_hours = market_open <= current_time <= market_close
         
-        # Determine market status
         if is_weekend:
             return False, "🔴 CLOSED", f"Weekend • {now.strftime('%A, %d %b %Y • %I:%M %p IST')}"
         elif is_holiday:
-            # Find which holiday it is
-            holiday_name = "Exchange Holiday"
             holiday_dict = {
                 date(2025, 2, 26): "Mahashivratri",
                 date(2025, 3, 14): "Holi",
@@ -230,9 +197,8 @@ def get_market_status():
             return True, "🟢 OPEN", f"Live Trading • {now.strftime('%A, %d %b %Y • %I:%M %p IST')}"
         elif current_time < market_open:
             return False, "🔴 CLOSED", f"Pre-market • Opens at 9:15 AM • {now.strftime('%A, %d %b %Y • %I:%M %p IST')}"
-        else:  # After market close
+        else:
             return False, "🔴 CLOSED", f"Post-market • Closed at 3:30 PM • {now.strftime('%A, %d %b %Y • %I:%M %p IST')}"
-            
     except Exception as e:
         return False, "🔴 ERROR", f"Status check failed: {str(e)[:50]}..."
 
@@ -241,8 +207,11 @@ def check_secrets():
     """Check if secrets are available and return API status"""
     try:
         if hasattr(st, 'secrets'):
-            if 'dhan_api_key' in st.secrets and st.secrets['dhan_api_key']:
-                return True, st.secrets['dhan_api_key']
+            # Check for different possible API key names
+            api_keys = ['API_TOKEN', 'DHAN_API_KEY', 'api_key', 'dhan_api_key']
+            for key in api_keys:
+                if key in st.secrets and st.secrets[key]:
+                    return True, st.secrets[key]
         return False, None
     except Exception:
         return False, None
@@ -671,6 +640,56 @@ def create_enhanced_oi_chart(data):
         df = pd.DataFrame(data['ce_strikes'])
         st.dataframe(df[['strike', 'ltp', 'oi']], use_container_width=True)
 
+# ====== EXTERNAL SIGNALS INPUT ======
+def manual_external_input():
+    """Manual input for external platform data"""
+    with st.expander("📊 Add External Signals", expanded=False):
+        st.markdown("**Copy data from Quantsapp/TradingView and paste below:**")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**QuantsApp:**")
+            max_oi_ce = st.text_input("Max OI CE", placeholder="23400 (+2.4L)")
+            max_oi_pe = st.text_input("Max OI PE", placeholder="23200 (+1.8L)")
+            volume_buzz = st.text_input("Volume Buzz", placeholder="23500CE 3.2x")
+        
+        with col2:
+            st.write("**TradingView:**")
+            pattern = st.selectbox("Pattern", ["Select...", "Breakout", "Pullback", "Rejection"])
+            trend = st.selectbox("Trend", ["Select...", "Bullish", "Bearish", "Sideways"])
+            
+        if st.button("Update Signals", type="primary"):
+            st.session_state.external_signals = {
+                "quantsapp": {"max_oi_ce": max_oi_ce, "max_oi_pe": max_oi_pe, "volume_buzz": volume_buzz},
+                "tradingview": {"pattern": pattern, "trend": trend},
+                "timestamp": datetime.now().isoformat()
+            }
+            st.success("✅ External signals updated!")
+            st.rerun()
+
+def display_external_signals():
+    """Display external signals if available"""
+    if 'external_signals' in st.session_state:
+        signals = st.session_state.external_signals
+        
+        st.subheader("🔶 External Platform Signals")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.success(f"📊 Max OI CE: {signals['quantsapp']['max_oi_ce']}")
+            st.success(f"📊 Volume Buzz: {signals['quantsapp']['volume_buzz']}")
+        
+        with col2:
+            st.success(f"📈 Pattern: {signals['tradingview']['pattern']}")
+            st.success(f"📈 Trend: {signals['tradingview']['trend']}")
+        
+        with col3:
+            st.caption(f"Updated: {signals['timestamp']}")
+            if st.button("🔄 Clear & Update"):
+                del st.session_state.external_signals
+                st.rerun()
+
 # ====== MAIN DASHBOARD ======
 def main():
     """Enhanced main dashboard with comprehensive market status detection"""
@@ -901,6 +920,12 @@ def main():
         
         st.divider()
         
+        # External signals input
+        manual_external_input()
+        display_external_signals()
+        
+        st.divider()
+        
         # Option Chain
         st.subheader("📊 Live Option Chain")
         
@@ -948,4 +973,3 @@ def main():
 # ====== APPLICATION ENTRY POINT ======
 if __name__ == "__main__":
     main()
- 
